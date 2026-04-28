@@ -570,16 +570,23 @@ INFO_FIELDS = [
 # ─── OpenAI ──────────────────────────────────────────────────────────────────
 @st.cache_resource
 def get_client():
-    api_key = os.getenv("OPENAI_API_KEY")
+    try:
+        # Streamlit Cloud
+        api_key = st.secrets["OPENAI_API_KEY"]
+    except:
+        # Local fallback
+        api_key = os.getenv("OPENAI_API_KEY")
+
     if not api_key:
         return None
+
     return OpenAI(api_key=api_key)
 
 
 def call_openai(history: list[dict]) -> str:
     client = get_client()
     if client is None:
-        return "⚠️ OPENAI_API_KEY not set. Add it to your .env file."
+        return "⚠️ API key not found. Add it in Streamlit Secrets or .env"
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
     try:
         resp = client.chat.completions.create(
@@ -685,7 +692,9 @@ with st.sidebar:
 
     # API status
     st.markdown('<div style="padding: 12px 24px 8px;">', unsafe_allow_html=True)
-    if os.getenv("OPENAI_API_KEY"):
+    api_key_check = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+
+    if api_key_check:
         st.markdown('<div class="status-pill"><div class="status-dot"></div>GPT-4o-mini Connected</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div style="color:#f87171;font-size:0.78rem;padding:8px 0;">⚠️ API key missing</div>', unsafe_allow_html=True)
